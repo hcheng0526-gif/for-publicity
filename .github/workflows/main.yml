@@ -1,0 +1,23 @@
+name: Auto Generate XHS Scripts
+
+on:
+  # 每天北京时间凌晨 2 点运行 (利用 0.8x 折扣)
+  schedule:
+    - cron: '0 18 * * *' # UTC 18:00 = 北京时间 02:00
+  workflow_dispatch: # 也支持手动点击运行
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Run MiMo Script
+        env:
+          MIMO_KEY: ${{ secrets.MIMO_API_KEY }}
+        run: python mimo_script.py
