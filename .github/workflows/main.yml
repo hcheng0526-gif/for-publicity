@@ -1,10 +1,9 @@
 name: Auto Generate XHS Scripts
 
 on:
-  # 每天北京时间凌晨 2 点运行 (利用 0.8x 折扣)
   schedule:
-    - cron: '0 18 * * *' # UTC 18:00 = 北京时间 02:00
-  workflow_dispatch: # 也支持手动点击运行
+    - cron: '0 18 * * *' 
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -19,5 +18,13 @@ jobs:
         run: pip install requests
       - name: Run MiMo Script
         env:
+          # 注意：只有一个冒号，后面必须有一个空格
           MIMO_API_KEY: ${{ secrets.MIMO_API_KEY }}
         run: python mimo_script.py
+
+      # 这一步能让你在 Actions 页面直接下载生成的文案
+      - name: Upload Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: xhs-scripts-output
+          path: xhs_output.json
