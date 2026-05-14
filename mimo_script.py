@@ -2,7 +2,7 @@ import requests
 import json
 
 # 1. 配置你的 API 信息
-API_KEY = "tp-cio6c5kjk4dd97l1jiuqqyqmec2mp053p7h8ca68uftmjc8b"
+API_KEY = ""
 URL = "https://token-plan-cn.xiaomimimo.com/v1"
 
 # 2. 定义你的题库 (这里可以放你的 30 道题)
