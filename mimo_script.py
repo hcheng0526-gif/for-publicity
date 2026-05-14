@@ -2,9 +2,11 @@ import requests
 import os
 import json
 import time  # 导入时间库
+
 # 1. 从 GitHub Secrets 环境变量中安全读取 API KEY
 API_KEY = os.getenv("MIMO_API_KEY") 
 URL = "https://token-plan-cn.xiaomimimo.com/v1/chat/completions"
+
 # 2. 你的 30 道完整题库数据
 quiz_data = [
     { "cat": "社交界限", "q": "你是否接受伴侣拥有“多年异性闺蜜”？", "opts": ["我完全接受，甚至能和对方成为朋友", "我认为对方应主动保持社交距离", "我要求伴侣必须带我认识对方", "我完全无法接受这种关系"] },
@@ -41,21 +43,19 @@ quiz_data = [
 
 def generate_xhs_batch():
     if not API_KEY:
-        print("❌ 错误：环境变量 MIMO_API_KEY 为空。")
+        print("❌ 错误：环境变量 MIMO_API_KEY 为空。", flush=True)
         return
 
     results = []
-    # OpenAI 协议的标准 Header
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
     }
 
- total_tasks = len(quiz_data)
+    total_tasks = len(quiz_data)
     for i, item in enumerate(quiz_data):
         print(f"🚀 [{i+1}/{total_tasks}] 正在处理：{item['q']}", flush=True)
 
-        # 针对小米模型优化的 Prompt
         prompt = f"""
 你是一位小红书情感爆款博主。请针对话题《{item['q']}》写一篇深度分析笔记。
 要求：
@@ -64,9 +64,8 @@ def generate_xhs_batch():
 3. 必须在结尾设计一个能引发评论区吵架的问题。
 """
 
-        # OpenAI 兼容格式的 Payload
         payload = {
-            "model": "mimo-v2.5-pro", # 请根据你额度支持的模型名微调，如 mimLM-v2.5-pro
+            "model": "mimo-v2.5-pro",
             "messages": [
                 {"role": "system", "content": "你是一个专业的小红书情感内容专家。"},
                 {"role": "user", "content": prompt}
@@ -75,22 +74,23 @@ def generate_xhs_batch():
         }
 
         try:
-            # 专属通道通常稳定性更高
             res = requests.post(URL, json=payload, headers=headers, timeout=60)
             res.raise_for_status()
             text = res.json()['choices'][0]['message']['content']
             results.append({"q": item['q'], "content": text})
-            print(f"✅ {item['q']} 生成成功")
+            print(f"✅ {item['q']} 生成成功 (字数: {len(text)})", flush=True)
         except Exception as e:
-            print(f"⚠️ {item['q']} 生成失败：{e}")
-  # 每题写完后休息 2 秒，防止 API 频率限制导致字数缩水
+            print(f"⚠️ {item['q']} 生成失败：{e}", flush=True)
+
+        # 每题写完后休息 2 秒，防止 API 频率限制导致字数缩水
         if i < total_tasks - 1:
             print("⏳ 等待 2 秒中...", flush=True)
             time.sleep(2)
+
     # 保存结果
     with open("xhs_output.json", "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=4)
-    print(f"✨ 任务完成！共生成 {len(results)} 篇文案。")
+    print(f"✨ 任务完成！共生成 {len(results)} 篇文案。", flush=True)
 
 if __name__ == "__main__":
     generate_xhs_batch()
