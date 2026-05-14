@@ -69,7 +69,7 @@ def generate_xhs_batch():
 
         # OpenAI 兼容格式的 Payload
         payload = {
-            "model": "mimLM-v2.5-pro", # 请根据你额度支持的模型名微调，如 mimLM-v2.5-pro
+            "model": "mimo-v2.5-pro", # 请根据你额度支持的模型名微调，如 mimLM-v2.5-pro
             "messages": [
                 {"role": "system", "content": "你是一个专业的小红书情感内容专家。"},
                 {"role": "user", "content": prompt}
