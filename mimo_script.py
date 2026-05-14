@@ -1,6 +1,7 @@
 import requests
 import os
 import json
+import time  # 导入时间库
 # 1. 从 GitHub Secrets 环境变量中安全读取 API KEY
 API_KEY = os.getenv("MIMO_API_KEY") 
 URL = "https://token-plan-cn.xiaomimimo.com/v1/chat/completions"
@@ -50,22 +51,18 @@ def generate_xhs_batch():
         "Content-Type": "application/json"
     }
 
-    for item in quiz_data:
-        opt_alpha = item['opts'][0]
-        opt_omega = item['opts'][-1]
-        
-        print(f"🚀 正在处理：{item['q']}")
+ total_tasks = len(quiz_data)
+    for i, item in enumerate(quiz_data):
+        print(f"🚀 [{i+1}/{total_tasks}] 正在处理：{item['q']}", flush=True)
 
         # 针对小米模型优化的 Prompt
         prompt = f"""
-        你是一位爆火的小红书情感博主。请按照目前小红书的推流要求，为以下话题写一篇【镜像坦白局】引流笔记：
-        话题：{item['q']}
-        观点冲突：一方选“{opt_alpha}” vs 另一方选“{opt_omega}”
-        要求：
-        - 标题：包含“镜像坦白局”、“价值观对齐”等关键词，吸睛且扎心。
-        - 正文：分析这两类人的心理（安全感、独立性等），排版多用Emoji，要有呼吸感。
-        - 结尾：引导点击测试链接。
-        """
+你是一位小红书情感爆款博主。请针对话题《{item['q']}》写一篇深度分析笔记。
+要求：
+1. 字数严禁少于 400 字，必须包含【冲突点拆解】、【性格侧写】、【博主点评】三个板块。
+2. 每一段都要有情绪共鸣，禁止使用空洞的废话。
+3. 必须在结尾设计一个能引发评论区吵架的问题。
+"""
 
         # OpenAI 兼容格式的 Payload
         payload = {
@@ -74,7 +71,7 @@ def generate_xhs_batch():
                 {"role": "system", "content": "你是一个专业的小红书情感内容专家。"},
                 {"role": "user", "content": prompt}
             ],
-            "temperature": 0.8
+            "temperature": 0.9
         }
 
         try:
@@ -86,7 +83,10 @@ def generate_xhs_batch():
             print(f"✅ {item['q']} 生成成功")
         except Exception as e:
             print(f"⚠️ {item['q']} 生成失败：{e}")
-
+  # 每题写完后休息 2 秒，防止 API 频率限制导致字数缩水
+        if i < total_tasks - 1:
+            print("⏳ 等待 2 秒中...", flush=True)
+            time.sleep(2)
     # 保存结果
     with open("xhs_output.json", "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=4)
