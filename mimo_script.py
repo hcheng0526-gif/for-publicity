@@ -3,7 +3,7 @@ import os
 import json
 # 1. 从 GitHub Secrets 环境变量中安全读取 API KEY
 API_KEY = os.getenv("MIMO_API_KEY") 
-URL = "https://api.mimo.xiaomi.com/v2.5/chat/completions"
+URL = "https://token-plan-cn.xiaomimimo.com/v1/chat/completions"
 # 2. 你的 30 道完整题库数据
 quiz_data = [
     { "cat": "社交界限", "q": "你是否接受伴侣拥有“多年异性闺蜜”？", "opts": ["我完全接受，甚至能和对方成为朋友", "我认为对方应主动保持社交距离", "我要求伴侣必须带我认识对方", "我完全无法接受这种关系"] },
@@ -40,58 +40,57 @@ quiz_data = [
 
 def generate_xhs_batch():
     if not API_KEY:
-        print("❌ 错误：环境变量 MIMO_API_KEY 为空，请检查 Secrets 配置。")
+        print("❌ 错误：环境变量 MIMO_API_KEY 为空。")
         return
 
     results = []
-    headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
+    # OpenAI 协议的标准 Header
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
 
     for item in quiz_data:
-        # 为了制造冲突感，我们随机取两个极端的选项作为对比
-        # 或者直接取第一个（较开放/独立）和最后一个（较保守/依赖）进行分析
         opt_alpha = item['opts'][0]
         opt_omega = item['opts'][-1]
         
-        print(f"🚀 正在生成分类【{item['cat']}】下的题目：{item['q']}")
+        print(f"🚀 正在处理：{item['q']}")
 
+        # 针对小米模型优化的 Prompt
         prompt = f"""
-        你是一位小红书百万级情感博主，擅长从细微的恋爱行为中挖掘深层价值观冲突。
-        
-        【分类】：{item['cat']}
-        【核心矛盾】：{item['q']}
-        【典型分歧】：
-        观点一："{opt_alpha}"
-        观点二："{opt_omega}"
-        
-        请帮我写一篇小红书引流笔记：
-        1. [爆款标题]：要带“镜像坦白局”、“价值观测试”、“情侣必看”关键词，用感叹号增加视觉冲击。
-        2. [内容梗概]：
-           - 模拟一个因为这个话题产生尴尬或沉默的真实瞬间。
-           - 分析：观点一背后的心理（如：独立、自信、或逃避）；观点二背后的心理（如：绝对占有、极度缺乏安全感、或仪式感）。
-           - 扎心结论：如果是这两种人在一起，会经历怎样的磨合？
-        3. [互动词]：呼吁大家带上家属来测，看看你们是“天生一对”还是“镜像死敌”。
-        4. [话题]：#暧昧期 #恋爱脑 #情侣测试 #三观不合 #镜像表白局
-        
-        要求：学习小红书热门内容，文字排版要有呼吸感，语气要亲切真实，增加活人感。
+        你是一位爆火的小红书情感博主。请按照目前小红书的推流要求，为以下话题写一篇【镜像坦白局】引流笔记：
+        话题：{item['q']}
+        观点冲突：一方选“{opt_alpha}” vs 另一方选“{opt_omega}”
+        要求：
+        - 标题：包含“镜像坦白局”、“价值观对齐”等关键词，吸睛且扎心。
+        - 正文：分析这两类人的心理（安全感、独立性等），排版多用Emoji，要有呼吸感。
+        - 结尾：引导点击测试链接。
         """
 
+        # OpenAI 兼容格式的 Payload
         payload = {
-            "model": "mimLM-v2.5-pro",
-            "messages": [{"role": "user", "content": prompt}],
+            "model": "mimLM-v2.5-pro", # 请根据你额度支持的模型名微调，如 mimLM-v2.5-pro
+            "messages": [
+                {"role": "system", "content": "你是一个专业的小红书情感内容专家。"},
+                {"role": "user", "content": prompt}
+            ],
             "temperature": 0.8
         }
 
         try:
-            res = requests.post(URL, json=payload, headers=headers)
+            # 专属通道通常稳定性更高
+            res = requests.post(URL, json=payload, headers=headers, timeout=60)
             res.raise_for_status()
             text = res.json()['choices'][0]['message']['content']
             results.append({"q": item['q'], "content": text})
+            print(f"✅ {item['q']} 生成成功")
         except Exception as e:
-            print(f"⚠️ 题目生成失败：{e}")
+            print(f"⚠️ {item['q']} 生成失败：{e}")
 
+    # 保存结果
     with open("xhs_output.json", "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=4)
-    print("✨ 全部 30 道题的文案已保存至 xhs_output.json")
+    print(f"✨ 任务完成！共生成 {len(results)} 篇文案。")
 
 if __name__ == "__main__":
     generate_xhs_batch()
